@@ -41,22 +41,23 @@ gw_manhattanplot <- function(path){
   ggplot(antiTNF, aes(
     x=GENPOS_cum, y=-log10(p.value),
     color= as.factor(CHROM)
-  ))+
+    ))+
     geom_point()+
     scale_x_continuous(
       label = as.factor(axis_set$CHROM),
-      breaks = axis_set$CENTER)+
+      breaks = axis_set$CENTER
+      )+
     scale_color_manual(values = rep(
       c("#006600", "#003300"),
       unique(length(axis_set$CHROM))
-    )) +
+      )) +
     geom_hline(
       yintercept = -log10(5*10^(-8)), color = "grey40",
       linetype = "dashed")+
-      labs(
-        x = "Chromosome",
-        y = expression("-log"[10]*"(p)")
-        ) +
+    labs(
+      x = "Chromosome",
+      y = expression("-log"[10]*"(p)")
+      ) +
     theme_classic()+
     theme(legend.position = "none",
           axis.text.x = element_text(angle = 60, size = 8, vjust = 0.5))
