@@ -5,40 +5,41 @@ gw_manhattanplot <- function(path){
   
   #Import the Data
   
-  o_data<- read.csv(path, sep="")
+  origninal_data<- read.csv(path, sep="")
   
   #Preparing Data
   ##slimming the data
   
-  sig_data = o_data %>%
+  sig_data = origninal_data %>%
     subset(p.value < 0.05)
   
-  notsig_data = o_data %>%
+  notsig_data = origninal_data %>%
     subset(p.value >= 0.05) %>%
     group_by(CHROM) %>%
     sample_frac(0.15)
   
-  antiTNF<-rbind(sig_data,notsig_data)
+  shrunk_data<-rbind(sig_data,notsig_data)
   
   ##Preparing the x axse
-  data_cum <- antiTNF %>%
+  data_cum <- shrunk_data %>%
+    arrange(CHROM) %>%
     group_by(CHROM) %>%
     summarise(max_GENPOS = max(GENPOS)) %>%
     mutate(GENPOS_add = lag(cumsum(as.numeric(max_GENPOS)),default=0)) %>%
     select(CHROM, GENPOS_add)
   
-  antiTNF <- antiTNF %>%
+  shrunk_data <- shrunk_data %>%
     inner_join(data_cum, by= "CHROM") %>%
     mutate(GENPOS_cum= GENPOS+GENPOS_add)
   
-  axis_set <-  antiTNF %>%
+  axis_set <-  shrunk_data %>%
     group_by(CHROM) %>%
     summarise(CENTER=median(GENPOS_cum))
 
   
   #Plotting Data
   
-  ggplot(antiTNF, aes(
+  ggplot(shrunk_data, aes(
     x=GENPOS_cum, y=-log10(p.value),
     color= as.factor(CHROM)
   ))+
