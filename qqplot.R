@@ -1,43 +1,19 @@
 #qq-plot
 
-qqplot <- function(data, theoretical_line= TRUE, show_regression=TRUE ){
+qqplot <- function(data, theoretical_line= TRUE, show_regression=FALSE, unifier = TRUE){
   library(dplyr)
   library(ggplot2)
   library(ggthemes)
   #1. GWAS daten einlesen
   
-  plink_regina_unifier <- function(inputfile_path){
-    library(dplyr)
-    
-    if (is.data.frame(inputfile_path)){
-      original_data <- inputfile_path
-    }else {original_data <- read.csv(inputfile_path, sep="")}
-    
-    
-    second_head <- colnames(original_data)[2]
-    
-    if (second_head == "POS"){
-      data_plot <- original_data %>%
-        select(CHROM="#CHROM", GENPOS=POS,ID, p.value=P)
-      data_plot <- data_plot%>%
-        filter(p.value <= 1)
-      data_plot <- data_plot %>%
-        mutate(CHROM = ifelse(CHROM %in% c("X", "Y", "MT", "0"), c("23","24","25","26"), CHROM))
-    }else if (second_head == "GENPOS"){
-      #print("Moin i am a regenie")
-      data_plot <- original_data %>%
-        select(CHROM, GENPOS,ID, p.value)
-      data_plot <- data_plot%>%
-        filter(p.value <= 1)
-    }else{
-      print("I dont know,pleas figur out what i am")
-    }
-    return(data_plot)}
-  original_data <- plink_regina_unifier(data) 
+  if(unifier){
+    original_data <- plink_regina_unifier(data)
+    }else{original_data <- data}
+  
   
   #2. Berechnen von QQ plot daten
   #beobachtete p-werte nach größe sortiert
-  sortet_observed_p_values <- sort(original_data$p.value)
+  sortet_observed_p_values <- sort(original_data$P)
   
   #erwarteten p-werte
   n= length(sortet_observed_p_values)
@@ -51,26 +27,19 @@ qqplot <- function(data, theoretical_line= TRUE, show_regression=TRUE ){
 
   
   #3. daten Frame erstellen
-  qqplot_data <- data.frame(Observed=sortet_observed_p_values, Expectet=expectet_p_values, Oberes_C=o_confi, Unteres_C=u_confi)
+  qqplot_data <- data.frame(P=sortet_observed_p_values, expectetP=expectet_p_values, Oberes_C=o_confi, Unteres_C=u_confi)
   #(3.)referenz lienie durch lineare regression
-  fit <- lm(Observed ~ Expectet, data = qqplot_data)
+  fit <- lm(P ~ expectetP, data = qqplot_data)
   
   slope <- coef(fit)[2]
-  intercept <- coef(fit)[1]
+ intercept <- coef(fit)[1]
   
   #4.(datenmenge verkleinern)
 
-    sig_data = qqplot_data %>%
-      subset(Observed < threshold)
-    
-    notsig_data = qqplot_data %>%
-      subset(Observed >= threshold) %>%
-      sample_frac(fraction)
-    
-    slim_data <-rbind(sig_data,notsig_data)
+qqplot_data <- slimmer(qqplot_data, notqqplot = FALSE)
 
   
- qq_plot <- ggplot(qqplot_data, aes(-log10(Expectet),-log10(Observed)))+
+ qq_plot <- ggplot(qqplot_data, aes(-log10(expectetP),-log10(P)))+
     geom_ribbon(aes(ymin = -log10(Oberes_C), ymax = -log10(Unteres_C)),fill="grey70",alpha=0.5) +
     geom_point()+
     theme_classic()
